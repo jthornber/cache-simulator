@@ -444,6 +444,9 @@ namespace {
 				return;
 			}
 
+			if (!interesting_block(origin_block))
+				return;
+
 			entry *e;
 			block l1_size = t1_.size() + b1_.size();
 			block l2_size = t2_.size() + b2_.size();
@@ -483,6 +486,10 @@ namespace {
 		}
 
 	private:
+		virtual bool interesting_block(block origin) {
+			return true;
+		}
+
 		void insert(entry &e) {
 			map_.insert(make_pair(e.origin_, ref(e)));
 			get_cache()->insert(e.cache_, e.origin_);
@@ -577,6 +584,59 @@ namespace {
 		block p_;
 		block allocated_;
 		block allocated_entries_;
+	};
+
+	class arc_window_policy : public arc_policy {
+	public:
+		arc_window_policy(block interesting_size, block origin_size, cache::ptr cache)
+			: arc_policy(origin_size, cache),
+			  entries_(interesting_size),
+			  allocated_(0) {
+		}
+
+	private:
+		virtual bool interesting_block(block origin) {
+			auto it = map_.find(origin);
+			if (it == map_.end()) {
+				if (allocated_ == entries_.size()) {
+					entry &e = lru_.front();
+					lru_.pop_front();
+					map_.erase(e.origin_);
+
+					e.origin_ = origin;
+					lru_.push_back(e);
+					map_.insert(make_pair(origin, ref(e)));
+
+				} else {
+					entry &e = entries_[allocated_++];
+					e.origin_ = origin;
+					lru_.push_back(e);
+					map_.insert(make_pair(origin, ref(e)));
+				}
+
+				return false;
+			}
+
+			// this block is interesting so we forget about it,
+			// relying on the arc policy to manage it.
+			map_.erase(it->second.origin_);
+			return true;
+		}
+
+		struct entry {
+			intrusive::list_member_hook<> list_;
+			block origin_;
+		};
+
+		typedef intrusive::member_hook<entry, intrusive::list_member_hook<>, &entry::list_> lru_option;
+		typedef intrusive::list<entry, lru_option> lru_list;
+
+		typedef std::map<block, entry &> entry_map;
+
+		vector<entry> entries_;
+		block allocated_;
+		lru_list lru_;
+		entry_map map_;
 	};
 
 	//--------------------------------
@@ -725,6 +785,12 @@ int main(int argc, char **argv)
 		display_cache_stats("arc", c);
 	}
 
+	{
+		cache::ptr c(new cache(cache_size));
+		policy::ptr p(new arc_window_policy(c->size() / 2, origin_size, c));
+		run_simulation(run_length, seq1, seq2, lseq, c, p);
+		display_cache_stats("arc_window", c);
+	}
 
 	return 0;
 }

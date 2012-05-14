@@ -14,5 +14,5 @@ CXXFLAGS=\
 %.o: %.cc
 	$(CXX) -c $(INCLUDES) $(CXXFLAGS) -o $@ $<
 
-pdf_approx: $(OBJECTS)
+cache_sim: $(OBJECTS)
 	g++ $(CXXFLAGS) -o $@ $+
