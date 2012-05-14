@@ -558,17 +558,19 @@ namespace {
 		}
 
 		block demote(optional<entry &> oe = optional<entry &>()) {
+			entry *e;
+
 			if ((t1_.size() > 0) &&
 			    ((t1_.size() > p_) || (oe && oe->state_ == B2 && t1_.size() == p_))) {
-				entry &e = pop(T1);
-				push(B1, e);
-				return e.cache_;
+				e = &pop(T1);
+				push(B1, *e);
 
 			} else {
-				entry &e = pop(T2);
-				push(B2, e);
-				return e.cache_;
+				e = &pop(T2);
+				push(B2, *e);
 			}
+
+			return e->cache_;
 		}
 
 		entry &alloc_entry() {
