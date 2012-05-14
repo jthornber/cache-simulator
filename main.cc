@@ -504,26 +504,24 @@ namespace {
 		}
 
 		void push(entry_state s, entry &e) {
+			e.state_ = s;
+
 			switch (s) {
 			case T1:
-				e.state_ = T1;
 				t1_.push_back(e);
 				insert(e);
 				break;
 
 			case T2:
-				e.state_ = T2;
 				t2_.push_back(e);
 				insert(e);
 				break;
 
 			case B1:
-				e.state_ = B1;
 				b1_.push_back(e);
 				break;
 
 			case B2:
-				e.state_ = B2;
 				b2_.push_back(e);
 				break;
 			}

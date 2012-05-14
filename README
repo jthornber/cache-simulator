@@ -1,0 +1,14 @@
+This program experiments with different cache replacement policies
+with a view to using them in the device-mapper cache target.
+
+The simulator builds a couple of probability density functions out of
+gaussian and uniform functions.  Then builds sequences of ios from
+these.  Obnoxious linear scans are also thrown in.
+
+A successful cache policy will have to be resistant to linear scans,
+and be able to spot when the io pattern has changed and prioritise
+different blocks.
+
+Unlike memory caches we don't _have_ to map an origin block into the
+cache.  Indeed since the copying is expensive, we should try very hard
+to only copy blocks that we feel are going to be hit a lot.
