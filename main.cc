@@ -651,7 +651,7 @@ namespace {
 			const block BIG_PRIME = 4294967291UL;
 			block h = b * BIG_PRIME;
 
-			return static_cast<unsigned>(h % get_cache()->size());
+			return static_cast<unsigned>(h % table_.size());
 
 		}
 
