@@ -639,6 +639,34 @@ namespace {
 		entry_map map_;
 	};
 
+	class arc_hash_policy : public arc_policy {
+	public:
+		arc_hash_policy(block interesting_size, block origin_size, cache::ptr cache)
+			: arc_policy(origin_size, cache),
+			  table_(cache->size() * 4, 0) {
+		}
+
+	private:
+		unsigned hash(block b) {
+			const block BIG_PRIME = 4294967291UL;
+			block h = b * BIG_PRIME;
+
+			return static_cast<unsigned>(h % get_cache()->size());
+
+		}
+
+		virtual bool interesting_block(block origin) {
+			unsigned h = hash(origin);
+			if (table_[h] == origin)
+				return true;
+
+			table_[h] = origin;
+			return false;
+		}
+
+		vector<block> table_;
+	};
+
 	//--------------------------------
 
 	class pdf_sequence : public sequence<block> {
@@ -790,6 +818,13 @@ int main(int argc, char **argv)
 		policy::ptr p(new arc_window_policy(c->size() / 2, origin_size, c));
 		run_simulation(run_length, seq1, seq2, lseq, c, p);
 		display_cache_stats("arc_window", c);
+	}
+
+	{
+		cache::ptr c(new cache(cache_size));
+		policy::ptr p(new arc_hash_policy(c->size() / 2, origin_size, c));
+		run_simulation(run_length, seq1, seq2, lseq, c, p);
+		display_cache_stats("arc_hash", c);
 	}
 
 	return 0;
