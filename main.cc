@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <math.h>
@@ -408,12 +409,10 @@ namespace {
 				switch (e.state_) {
 				case T1:
 					t1_.erase(t1_.iterator_to(e));
-					push(T2, e);
 					break;
 
 				case T2:
 					t2_.erase(t2_.iterator_to(e));
-					push(T2, e);
 					break;
 
 				case B1:
@@ -426,7 +425,6 @@ namespace {
 					e.cache_ = new_cache;
 					e.origin_ = origin_block;
 
-					push(T2, e);
 					break;
 
 				case B2:
@@ -439,56 +437,49 @@ namespace {
 					e.cache_ = new_cache;
 					e.origin_ = origin_block;
 
-					push(T2, e);
 					break;
 				}
 
+				push(T2, e);
 				return;
 			}
 
+			entry *e;
 			block l1_size = t1_.size() + b1_.size();
 			block l2_size = t2_.size() + b2_.size();
 			if (l1_size == c->size()) {
 				if (t1_.size() < c->size()) {
-					entry &e = pop(B1);
+					e = &pop(B1);
 
 					block new_cache = demote();
-					e.cache_ = new_cache;
-					e.origin_ = origin_block;
-					push(T1, e);
-					return;
+					e->cache_ = new_cache;
+					e->origin_ = origin_block;
+
 				} else {
-					entry &e = pop(T1);
-					e.origin_ = origin_block;
-					push(T1, e);
-					return;
+					e = &pop(T1);
+					e->origin_ = origin_block;
 				}
 
 			} else if (l1_size < c->size() && (l1_size + l2_size >= c->size())) {
 				if (l1_size + l2_size == 2 * c->size()) {
-					entry &e = pop(B2);
-					e.cache_ = demote();
-					e.origin_ = origin_block;
-					push(T1, e);
-					return;
+					e = &pop(B2);
+					e->cache_ = demote();
+					e->origin_ = origin_block;
 
 				} else {
-					entry &e = alloc_entry();
-					e.cache_ = demote();
-					e.origin_ = origin_block;
-					push(T1, e);
-					return;
+					e = &alloc_entry();
+					e->cache_ = demote();
+					e->origin_ = origin_block;
 				}
 
 			} else {
-				// check the cache is fully populated
 				BOOST_ASSERT(allocated_ < c->size());
-				entry &e = alloc_entry();
-				e.origin_ = origin_block;
-				e.cache_ = allocated_++;
-				push(T1, e);
-				return;
+				e = &alloc_entry();
+				e->origin_ = origin_block;
+				e->cache_ = allocated_++;
 			}
+
+			push(T1, *e);
 		}
 
 	private:
@@ -532,36 +523,33 @@ namespace {
 		}
 
 		entry &pop(entry_state s) {
+			entry *e;
+
 			switch (s) {
-			case T1: {
-				entry &e = t1_.front();
+			case T1:
+				e = &t1_.front();
 				t1_.pop_front();
-				map_.erase(e.origin_);
-				return e;
-			}
+				map_.erase(e->origin_);
+				break;
 
-			case T2: {
-				entry &e = t2_.front();
+			case T2:
+				e = &t2_.front();
 				t2_.pop_front();
-				map_.erase(e.origin_);
-				return e;
-			}
+				map_.erase(e->origin_);
+				break;
 
-			case B1: {
-				entry &e = b1_.front();
+			case B1:
+				e = &b1_.front();
 				b1_.pop_front();
-				return e;
-			}
+				break;
 
-			case B2: {
-				entry &e = b2_.front();
+			case B2:
+				e = &b2_.front();
 				b2_.pop_front();
-				return e;
-			}
+				break;
 			}
 
-			BOOST_ASSERT(false);
-			return *reinterpret_cast<entry *>(0);
+			return *e;
 		}
 
 		block demote(optional<entry &> oe = optional<entry &>()) {
@@ -665,9 +653,9 @@ namespace {
 		block total = c->get_hits() + c->get_misses();
 
 		cout << label << ": "
-		     << percentage(c->get_hits(), total)
+		     << setprecision(3) << percentage(c->get_hits(), total)
 		     << "% hits, "
-		     << percentage(c->get_evictions(), total)
+		     << setprecision(3) << percentage(c->get_evictions(), total)
 		     << "% evictions"
 		     << endl;
 	}
