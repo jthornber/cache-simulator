@@ -643,7 +643,7 @@ namespace {
 	public:
 		arc_hash_policy(block interesting_size, block origin_size, cache::ptr cache)
 			: arc_policy(origin_size, cache),
-			  table_(cache->size() * 4, 0) {
+			  table_(interesting_size, 0) {
 		}
 
 	private:
